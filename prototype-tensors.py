@@ -21,7 +21,7 @@ def ai_eval(table=None, model=None, inputs=[], outputs=[]):
     columns = [ table.getColumn(col) for col in inputs ]
 
     print("COMPUTE NEW DATA")
-    # python looping is slow.  should avoid or numba it
+    #TODO: python looping is slow.  should avoid or numba it
     for i in range(n):
         input_values = [ col.get(i) for col in columns ]
         output_values = model(*input_values)
@@ -47,17 +47,14 @@ def ai_eval(table=None, model=None, inputs=[], outputs=[]):
 import numpy as np
 from deephaven.TableTools import emptyTable
 
-t = emptyTable(10).update("X = i", "Y = sqrt(X)")
-
 def make_tensor(x):
     return np.random.rand(3,2) + x
-
-t2 = t.update("Z = make_tensor(X)")
 
 def model_func(a,b,c):
     return 3*a, b+11, b + 32
 
-
+t = emptyTable(10).update("X = i", "Y = sqrt(X)")
+t2 = t.update("Z = make_tensor(X)")
 t3 = ai_eval(table=t2, model=model_func, inputs=["X", "Y", "Z"], outputs=["A", "B", "C"])
 
 #TODO: dropping weird column types to avoid some display bugs
