@@ -233,4 +233,4 @@ def to_scalar(data, i):
 
 ai_eval(table = iris, model_func = train_and_validate,
     inputs = [Input("Class", to_tensor), Input(["SepalLengthCM","SepalWidthCM","PetalLengthCM","PetalWidthCM"], to_tensor)],
-    outputs = [Output("Predicted", to_table)])
+    outputs = [Output("Predicted", to_scalar)])
