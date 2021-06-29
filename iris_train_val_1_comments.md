@@ -25,6 +25,8 @@ Here is a list of things that suck about this example, in order of appearance in
          
    2. We can ask the user for a vector of dimensions that they want to impose on their data in the ai_eval function call.
       This leaves this issue entirely in the hands of the user, which gives flexibility but possibly reduces ease of use.
+      
+      I don't think this will work, as the most common operation would be transpose and you cannot create transpose from reshape
          
    3. We can try to figure out from the given model_func what shapes the model expects and transform given data as needed. This sunds like it
       would suck to implement, as I'm not sure if it's possible to get such information just from model_func.
