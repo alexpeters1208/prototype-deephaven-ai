@@ -8,6 +8,8 @@
 ################################################################################################################################
 
 from deephaven import QueryScope
+from deephaven import npy
+import numpy as np
 import jpy
 
 class Input:
@@ -61,6 +63,7 @@ def _parse_input(inputs, table):
         
         
 def _gather_input(table, input):
+    # converts selected columns to numpy and removes axes of length 1
     npy_table = np.squeeze(npy.numpy_slice(table.view(input.columns), 0, table.size()))
     return input.gather(*npy_table)
 
@@ -76,6 +79,7 @@ def ai_eval(table=None, model_func=None, inputs=[], outputs=[]):
     inputs = _parse_input(inputs, table)
 
     print("GATHER")
+    # note that the default is now row-wise, which makes sense to me. Add feature to allow user to select axis of compression
     gathered = [ _gather_input(table, input) for input in inputs ]
 
     # if there are no outputs, we just want to call model_func and return nothing
@@ -242,8 +246,11 @@ def train_and_validate(target, features):
     return predicted_classes
 
 
-def to_tensor(*data):
-    return torch.tensor(data)
+def to_tensor_long(*data):
+    return torch.tensor(data).long()
+
+def to_tensor_float(*data):
+    return torch.tensor(data).float()
 
 def to_scalar(data, i):
     return int(data[i])
@@ -251,5 +258,5 @@ def to_scalar(data, i):
 
 # supervised learning on all features, target first
 predicted = ai_eval(table = iris, model_func = train_and_validate,
-    inputs = [Input("Class", to_tensor), Input([], to_tensor)],
+    inputs = [Input("Class", to_tensor_long), Input([], to_tensor_float)],
     outputs = [Output("Predicted", to_scalar, "int")])
