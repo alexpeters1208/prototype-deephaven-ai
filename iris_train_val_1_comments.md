@@ -45,6 +45,8 @@ Here is a list of things that suck about this example, in order of appearance in
    1. Figure out how to get datatypes from returned tensors, independent of Tensorflow or PyTorch, etc. Then use this type to create column of correct type.
        
    2. Have users declare desired output type in the output class.
+
+   This is not so much of a problem as users can choose type. I missed this initially. Would be nice to infer, not a serious design problem
     
 ##
 
