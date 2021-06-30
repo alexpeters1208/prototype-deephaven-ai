@@ -35,22 +35,40 @@ def __gather_input(table, input):
 #TODO: ths is a static example, real time requires more work
 #TODO: this is not written in an efficient way.  it is written quickly to get something to look at
 
-# this handles input of length 1 and assumes user wants to use all columns
-def _default_input(inputs, table):
-    if len(inputs) > 1 and inputs[1] == "ALL":
-        # this creates a list of all columns in table that are not already inputs
-        remaining = list(table.dropColumns(inputs[0].columns[0]).getMeta().getColumn("Name").getDirect())
-        # create new list of inputs with all columns
-        new_inputs = [inputs[0]] + [Input(remaining, inputs[0].gather)]
-        return new_inputs
+# this handles input so that user does not always have to enter every column they want to use
+def _parse_input(inputs, table):
+    # what are all possible cases
+    new_inputs = inputs
+    # input length zero - problem
+    if len(inputs) == 0:
+        raise ValueError('The input list cannot have length 0.')
+    # first input list of features
+    elif len(inputs) == 1:
+        # if list of features is empty, replace with all columns and return
+        if len(inputs[0].columns) == 0:
+            new_inputs[0].columns = list(table.getMeta().getColumn("Name").getDirect())
+            return new_inputs
+        else:
+            return new_inputs
     else:
-        return inputs
+        # now that we know input length at least 2, ensure target non-empty
+        if len(inputs[0].columns) == 0:
+            raise ValueError('Target input cannot be empty.')
+        else:
+            target = inputs[0].columns
+            # look through every other input to find empty list
+            for i in range(1,len(inputs)):
+                if len(inputs[i].columns) == 0:
+                    new_inputs[i].columns = list(table.dropColumns(target).getMeta().getColumn("Name").getDirect())
+                else:
+                    pass
+            return new_inputs
 
 
 def ai_eval(table=None, model_func=None, inputs=[], outputs=[]):
     print("SETUP")
     # append default inputs to inputs if needed
-    inputs = _default_input(inputs, table)
+    inputs = _parse_input(inputs, table)
 
     print("GATHER")
     gathered = [ __gather_input(table, input) for input in inputs ]
