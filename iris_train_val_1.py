@@ -25,11 +25,6 @@ class Output:
         self.scatter = scatter
         self.col_type = col_type
 
-def __gather_input(table, input):
-    #TODO: getDirect is probably terribly slow here, but it makes short code
-    data = [ table.getColumn(col).getDirect() for col in input.columns ]
-    return input.gather(*data)
-
 
 #TODO: clearly in production code there would need to be extensive testing of inputs and outputs (e.g. no null, correct size, ...)
 #TODO: ths is a static example, real time requires more work
@@ -63,6 +58,16 @@ def _parse_input(inputs, table):
                 else:
                     pass
             return new_inputs
+        
+        
+def _gather_input(table, input):
+    npy_table = np.squeeze(npy.numpy_slice(table.view(input.columns), 0, table.size()))
+    return input.gather(*npy_table)
+
+def _gather_input_original(table, input):
+    #TODO: getDirect is probably terribly slow here, but it makes short code
+    data = [ table.getColumn(col).getDirect() for col in input.columns ]
+    return input.gather(*data)
 
 
 def ai_eval(table=None, model_func=None, inputs=[], outputs=[]):
@@ -71,12 +76,7 @@ def ai_eval(table=None, model_func=None, inputs=[], outputs=[]):
     inputs = _parse_input(inputs, table)
 
     print("GATHER")
-    gathered = [ __gather_input(table, input) for input in inputs ]
-
-    # the following lines are done to reshape the data in a form the model will like, should not have to hard
-    # code this but the user should not have to make these transformations themselves
-    gathered[0] = torch.flatten(torch.transpose(gathered[0], 0, 1))
-    gathered[1] = torch.transpose(gathered[1], 0, 1)#.unsqueeze(0) adds extra dimension to beginning of tensor, may need
+    gathered = [ _gather_input(table, input) for input in inputs ]
 
     # if there are no outputs, we just want to call model_func and return nothing
     if outputs == None:
