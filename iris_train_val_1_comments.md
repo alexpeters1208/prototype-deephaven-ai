@@ -9,6 +9,8 @@ Here is a list of things that suck about this example, in order of appearance in
    Potential solutions:
    
    I have no idea.
+   
+I've created a function to parse input that should handle this. Will use this till I figure out how to break it.
       
 ##
       
@@ -46,7 +48,7 @@ Here is a list of things that suck about this example, in order of appearance in
        
    2. Have users declare desired output type in the output class.
 
-   This is not so much of a problem as users can choose type. I missed this initially. Would be nice to infer, not a serious design problem
+This is not so much of a problem as users can choose type. I missed this initially. Would be nice to infer, not a serious design problem
     
 ##
 
