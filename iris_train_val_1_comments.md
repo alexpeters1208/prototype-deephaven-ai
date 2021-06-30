@@ -36,6 +36,9 @@ I've created a function to parse input that should handle this. Will use this ti
    4. Ideally, we generalize the __gather_input__ function to be able to aggregate the data in whatever way the user wants to do, without needing
       to specify additional dimensionality arguments. Not sure how to make this happen.
  
+This now does things row-wise by default, and avoids the ugly transformations in the last iteration. However, goes through numpy, which may be a problem
+for the real time case. I'm not sure there is a significant gain in avoiding numpy for the static case.
+ 
 ##
          
 (!!)
