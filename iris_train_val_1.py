@@ -249,6 +249,7 @@ def to_scalar(data, i):
     return int(data[i])
 
 
-ai_eval(table = iris, model_func = train_and_validate,
-    inputs = [Input("Class", to_tensor), Input(["SepalLengthCM","SepalWidthCM","PetalLengthCM","PetalWidthCM"], to_tensor)],
-    outputs = [Output("Predicted", to_scalar)])
+# supervised learning on all features, target first
+predicted = ai_eval(table = iris, model_func = train_and_validate,
+    inputs = [Input("Class", to_tensor), Input([], to_tensor)],
+    outputs = [Output("Predicted", to_scalar, "int")])
