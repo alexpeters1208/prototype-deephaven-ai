@@ -76,4 +76,6 @@ This is not so much of a problem as users can choose type. I missed this initial
    
    1. The thing I will likely have to do is develop some kind of interface whereby the user determines hyperparameters, but in a way that allows for tuning
       from various outside libraries that we don't want to try to anticipate. I've been trying to think of what this might look like but I don't have any
-      concrete ideas yet. 
+      concrete ideas yet.
+      
+Surprise surprise, not actually my problem. The infrastructure so far allows the user to do as they wish and that's what I care about.
