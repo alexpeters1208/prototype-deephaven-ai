@@ -178,7 +178,7 @@ class MLP(nn.Module):
 model = MLP(4)
 criterion = nn.CrossEntropyLoss()
 optimizer = SGD(model.parameters(), lr=0.01, momentum=0.9)
-epochs=500
+epochs = 500
 batch_size = 20
 split = .75
 
