@@ -116,27 +116,19 @@ def ai_eval(table=None, model_func=None, inputs=[], outputs=[]):
 # Everything here would be user created -- or maybe part of a DH library if it is common functionality
 ################################################################################################################################
 
-import random
-import numpy as np
-from deephaven.TableTools import readCsv
-from deephaven import QueryScope
 import torch
 import torchsummary
-from torch import Tensor
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
-from torch.utils.data import random_split
-from torch.nn import Linear
-from torch.nn import ReLU
-from torch.nn import Softmax
-from torch.nn import Module
+import torch.nn as nn
 from torch.optim import SGD
-from torch.nn import CrossEntropyLoss
-from torch.nn.init import kaiming_uniform_
-from torch.nn.init import xavier_uniform_
+
 from numpy import argmax
 from numpy import vstack
 from sklearn.metrics import accuracy_score
+
+from deephaven.TableTools import readCsv
+
+# set seed for reproducibility
+torch.manual_seed(17306168389181004404)
 
 # import data from sample data directory
 iris = readCsv("/data/examples/iris/csv/iris.csv")
@@ -151,22 +143,22 @@ iris = iris.aj(iris.by("Class")\
 # create model, this does not change with how you interact with ai_eval, so we put it at the top
 
 # model definition
-class MLP(Module):
+class MLP(nn.Module):
     # define model elements
     def __init__(self, n_inputs):
         super(MLP, self).__init__()
         # input to first hidden layer
-        self.hidden1 = Linear(n_inputs, 10)
-        kaiming_uniform_(self.hidden1.weight, nonlinearity='relu')
-        self.act1 = ReLU()
+        self.hidden1 = nn.Linear(n_inputs, 10)
+        nn.init.kaiming_uniform_(self.hidden1.weight, nonlinearity='relu')
+        self.act1 = nn.ReLU()
         # second hidden layer
-        self.hidden2 = Linear(10, 8)
-        kaiming_uniform_(self.hidden2.weight, nonlinearity='relu')
-        self.act2 = ReLU()
+        self.hidden2 = nn.Linear(10, 8)
+        nn.init.kaiming_uniform_(self.hidden2.weight, nonlinearity='relu')
+        self.act2 = nn.ReLU()
         # third hidden layer and output
-        self.hidden3 = Linear(8, 3)
-        xavier_uniform_(self.hidden3.weight)
-        self.act3 = Softmax(dim=1)
+        self.hidden3 = nn.Linear(8, 3)
+        nn.init.xavier_uniform_(self.hidden3.weight)
+        self.act3 = nn.Softmax(dim=1)
  
     # forward propagate input
     def forward(self, X):
@@ -184,7 +176,7 @@ class MLP(Module):
 
 # define model and set hyperparameters
 model = MLP(4)
-criterion = CrossEntropyLoss()
+criterion = nn.CrossEntropyLoss()
 optimizer = SGD(model.parameters(), lr=0.01, momentum=0.9)
 epochs=500
 batch_size = 20
