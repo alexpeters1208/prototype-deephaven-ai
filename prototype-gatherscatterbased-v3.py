@@ -27,6 +27,7 @@ class Output:
         self.col_type = col_type
 
 def __gather_input(table, input):
+    # TODO: for real time, this list creation should happen exactly once.  No reason to redo this every tick
     cols = [ table.getColumnSource(col) for col in input.columns ]
     #TODO: need efficient index handling for hist and real time.  This is just a quick hack for hist.
     # An efficient implementation is probably an iterator over multiple index sets, implemented in Java -- if one doesn't exist.
