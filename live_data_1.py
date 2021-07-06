@@ -79,17 +79,6 @@ def _parse_input(inputs, table):
                 else:
                     pass
             return new_inputs
-        
-        
-def _gather_input(table, input):
-    # converts selected columns to numpy and removes axes of length 1
-    npy_table = np.squeeze(npy.numpy_slice(table.view(input.columns), 0, table.size()))
-    return input.gather(*npy_table)
-
-def _gather_input_original(table, input):
-    #TODO: getDirect is probably terribly slow here, but it makes short code
-    data = [ table.getColumn(col).getDirect() for col in input.columns ]
-    return input.gather(*data)
 
 
 def ai_eval(table=None, model_func=None, inputs=[], outputs=[]):
@@ -140,23 +129,31 @@ from deephaven import TableTools as ttools
 from deephaven import listen
 
 data = ttools.timeTable("00:00:10").update("X=i", "Y=new int[]{0,1,2}").tail(5).ungroup()
-static_data = ttools.emptyTable(15).snapshot(data)
+static_data = ttools.emptyTable(1).snapshot(data, True)
 
 # here, f is known as the listener
-def f(update):
-    
-    print(type(update.added))
-    print(f"ADDED: ", update.added)
-    print(f"MODIFIED: ", update.modified)
-    print(f"DELETED: ", update.removed)
-    print(f"REINDEXED: ", update.shifted)
-    print(f"ModifiedColumnSet: ", update.modifiedColumnSet)
+def get_added(update):
+    print(update.added)
+    return update.added
 
-handle = listen(table, f)
+handle = listen(data, get_added)
 
 
+def do_computation(data):
+    return data + 1
+
+def gather(idx, col):
+    rst = np.empty(len(idx), dtype=np.long)
+    for (i,kk) in enumerate(idx):
+        rst[i] = col[0].get(kk)
+    return rst
+
+def scatter(data, i):
+    return int(data[i])
 
 
+new_static_table = ai_eval(table = static_data, model_func = do_computation,
+                    inputs = [Input("X", gather)], outputs = [Output("New", scatter, "int")])
 
 new_table = ai_eval(table = data, model_func = do_computation,
-                    inputs = [Input("X", gather)], outputs = [Output("New", scatter)])
+                    inputs = [Input("X", gather)], outputs = [Output("New", scatter, "int")])
