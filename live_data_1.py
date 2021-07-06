@@ -1,3 +1,8 @@
+# This example demonstrates a case where a user function creates partial tensors for each row.
+# These partial tensors are aggregated into tensors before evaluating the model.  
+# The aggregation should result in more efficient use of the AI machinery.  
+# The model function is then evaluated for each row to create results for the row.
+
 ################################################################################################################################
 # Everything here would be part of a DH library
 ################################################################################################################################
@@ -22,6 +27,25 @@ class Output:
         self.scatter = scatter
         self.col_type = col_type
 
+#TODO: this should be implemented in Java for speed.  This efficiently iterates over the indices in multiple index sets.  Works for hist and real time.
+class IndexSetIterator:
+    def __init__(self, *indexes):
+        self.indexes = indexes
+
+    def __len__(self):
+        rst = 0
+
+        for index in self.indexes:
+            rst += index.size()
+
+        return rst
+
+    def __iter__(self):
+        for index in self.indexes:
+            it = index.iterator()
+
+            while it.hasNext():
+                yield it.next()
 
 #TODO: clearly in production code there would need to be extensive testing of inputs and outputs (e.g. no null, correct size, ...)
 #TODO: ths is a static example, real time requires more work
@@ -69,13 +93,15 @@ def _gather_input_original(table, input):
 
 
 def ai_eval(table=None, model_func=None, inputs=[], outputs=[]):
+
     print("SETUP")
-    # append default inputs to inputs if needed
     inputs = _parse_input(inputs, table)
+    col_sets = [ [ table.getColumnSource(col) for col in input.columns ] for input in inputs ]
 
     print("GATHER")
-    # note that the default is now row-wise, which makes sense to me. Add feature to allow user to select axis of compression
-    gathered = [ _gather_input(table, input) for input in inputs ]
+    #TODO: for real time, the IndexSetIterator would be populated with the ADD and MODIFY indices
+    idx = IndexSetIterator(table.getIndex())
+    gathered = [ input.gather(idx, col_set) for (input,col_set) in zip(inputs,col_sets) ]
 
     # if there are no outputs, we just want to call model_func and return nothing
     if outputs == None:
@@ -86,8 +112,6 @@ def ai_eval(table=None, model_func=None, inputs=[], outputs=[]):
     else:
         print("COMPUTE NEW DATA")
         output_values = model_func(*gathered)
-
-        print(type(output_values))
 
         print("POPULATE OUTPUT TABLE")
         rst = table.by()
