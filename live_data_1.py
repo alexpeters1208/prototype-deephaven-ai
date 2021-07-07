@@ -46,6 +46,23 @@ class IndexSetIterator:
 
             while it.hasNext():
                 yield it.next()
+                
+#TODO: This should also be implemented in Java for speed. This will listen for table updates and return AMDR indices
+class TableListener:
+    def __init__(self):
+        self.counter = 0
+        self.update = None
+
+    def onUpdate(self, update):
+        self.counter += 1
+        self.added = update.added
+        self.modded = update.modified
+        self.deleted = update.removed
+        self.reindexed = update.shifted
+        self.update = [self.added, self.modded, self.deleted, self.reindexed]
+
+    def getUpdate(self):
+        return self.update
 
 #TODO: clearly in production code there would need to be extensive testing of inputs and outputs (e.g. no null, correct size, ...)
 #TODO: ths is a static example, real time requires more work
