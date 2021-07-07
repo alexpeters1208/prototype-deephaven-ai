@@ -148,13 +148,6 @@ from deephaven import listen
 data = ttools.timeTable("00:00:10").update("X=i", "Y=new int[]{0,1,2}").tail(5).ungroup()
 static_data = ttools.emptyTable(1).snapshot(data, True)
 
-# here, f is known as the listener
-def get_added(update):
-    print(update.added)
-    return update.added
-
-handle = listen(data, get_added)
-
 
 def do_computation(data):
     return data + 1
