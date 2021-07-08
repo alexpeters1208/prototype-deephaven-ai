@@ -47,35 +47,11 @@ class IndexSetIterator:
             while it.hasNext():
                 yield it.next()
                 
-# this will get instantiated when TableListener gets called, and will accumulate AMDR indices
-class IndexAccumulator():
-    def __init__(self):
-        java_type = jpy.get_type("io.deephaven.db.v2.utils.Index")
-        self.accumulated = None
-        self.added = java_type
-        self.modified = java_type
-        self.deleted = java_type
-        self.reindexed = java_type
-
-    def accumulate(self, update): 
-        self.added.insert(update[0])
-        print(self.added)
-        self.modified.insert(update[1])
-        print(self.modified)
-        self.deleted.insert(update[2])
-        print(self.deleted)
-        self.reindexed.insert(update[3])
-        print(self.reindexed)
-
-    def getAccumulated(self):
-        return self.accumulated
-
 #TODO: This should also be implemented in Java for speed. This will listen for table updates and return AMDR indices
 class TableListener:
     def __init__(self):
         self.counter = 0
         self.update = None
-        self.accumulator = IndexAccumulator()
 
     def onUpdate(self, update):
         self.counter += 1
@@ -83,15 +59,8 @@ class TableListener:
         self.modded = update.modified
         self.deleted = update.removed
         self.reindexed = update.shifted
+        # pass DH index objects in a list that can be accessed from outside the class
         self.update = [self.added, self.modded, self.deleted, self.reindexed]
-        # appends indices updated at each tick to accumulator
-        self.accumulator.accumulate(self.update)
-
-    def getUpdate(self):
-        return self.update
-
-    def getAccumulated(self):
-        return self.accumulator.getAccumulated()
 
 #TODO: clearly in production code there would need to be extensive testing of inputs and outputs (e.g. no null, correct size, ...)
 #TODO: ths is a static example, real time requires more work
@@ -126,7 +95,7 @@ def _parse_input(inputs, table):
                     pass
             return new_inputs
 
-
+# this is what the user calls to make DH data interact with standard PT/TF functions that they create
 def ai_eval(table=None, model_func=None, inputs=[], outputs=[]):
 
     print("SETUP")
