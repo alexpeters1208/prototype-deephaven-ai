@@ -9,6 +9,7 @@
 
 from deephaven import QueryScope
 from deephaven import npy
+from deephaven import listen
 import numpy as np
 import jpy
 
@@ -46,21 +47,7 @@ class IndexSetIterator:
 
             while it.hasNext():
                 yield it.next()
-                
-#TODO: This should also be implemented in Java for speed. This will listen for table updates and return AMDR indices
-class TableListener:
-    def __init__(self):
-        self.counter = 0
-        self.update = None
 
-    def onUpdate(self, update):
-        self.counter += 1
-        self.added = update.added
-        self.modded = update.modified
-        self.deleted = update.removed
-        self.reindexed = update.shifted
-        # pass DH index objects in a list that can be accessed from outside the class
-        self.update = [self.added, self.modded, self.deleted, self.reindexed]
 
 #TODO: clearly in production code there would need to be extensive testing of inputs and outputs (e.g. no null, correct size, ...)
 #TODO: ths is a static example, real time requires more work
@@ -95,18 +82,10 @@ def _parse_input(inputs, table):
                     pass
             return new_inputs
 
-# this is what the user calls to make DH data interact with standard PT/TF functions that they create
-def ai_eval(table=None, model_func=None, inputs=[], outputs=[]):
 
-    print("SETUP")
-    inputs = _parse_input(inputs, table)
-    col_sets = [ [ table.getColumnSource(col) for col in input.columns ] for input in inputs ]
-
-    print("GATHER")
-    #TODO: for real time, the IndexSetIterator would be populated with the ADD and MODIFY indices
-    idx = IndexSetIterator(table.getIndex())
-    gathered = [ input.gather(idx, col_set) for (input,col_set) in zip(inputs,col_sets) ]
-
+# this will be called from AI eval and create the necessary output
+def _create_output(table=None, model_func=None, gathered=[], outputs=[]):
+    print("stepped into create_output")
     # if there are no outputs, we just want to call model_func and return nothing
     if outputs == None:
         print("COMPUTE NEW DATA")
@@ -121,19 +100,61 @@ def ai_eval(table=None, model_func=None, inputs=[], outputs=[]):
         rst = table.by()
         n = table.size()
 
+        print(rst)
+        print(n)
+
         for output in outputs:
             print(f"GENERATING OUTPUT: {output.column}")
             #TODO: maybe we can infer the type?
             data = jpy.array(output.col_type, n)
 
             #TODO: python looping is slow.  should avoid or numba it
+            # this is the line that breaks, the bad logic is probably elsewhere
             for i in range(n):
+                print(i)
                 data[i] = output.scatter(output_values, i)
 
             QueryScope.addParam("__temp", data)
             rst = rst.update(f"{output.column} = __temp")
-
+            
         return rst.ungroup()
+
+
+# this is what the user calls to make DH data interact with standard PT/TF functions that they create
+def ai_eval(table=None, model_func=None, live=False, inputs=[], outputs=[]):
+    print("SETUP")
+    inputs = _parse_input(inputs, table)
+    col_sets = [ [ table.getColumnSource(col) for col in input.columns ] for input in inputs ]
+
+    print("GATHER")
+    # this is where we need to begin making the distinction between static and live data
+    if live:
+        # instantiate class to listen to updates and update output accordingly
+        listener = ListenAndReturn(table, model_func, inputs, outputs, col_sets)
+        handle = listen(table, listener, replay_initial=True)
+        return listener.newTable
+    
+    else:
+        idx = IndexSetIterator(table.getIndex())
+        gathered = [ input.gather(idx, col_set) for (input,col_set) in zip(inputs,col_sets) ]
+        return _create_output(table, model_func, gathered, outputs)
+
+
+class ListenAndReturn:
+    def __init__(self, table, model_func, inputs, outputs, col_sets):
+        self.table = table
+        self.model_func = model_func
+        self.inputs = inputs
+        self.outputs = outputs
+        self.col_sets = col_sets
+        self.newTable = None
+
+    def onUpdate(self, isReplay, update):
+        self.idx = IndexSetIterator(update.added, update.modified)
+        self.gathered = [ input.gather(self.idx, col_set) for (input,col_set) in zip(self.inputs, self.col_sets) ]
+        print(self.gathered)
+        self.newTable = _create_output(self.table, self.model_func, self.gathered, self.outputs)
+
 
 ################################################################################################################################
 # Everything here would be user created -- or maybe part of a DH library if it is common functionality
@@ -160,8 +181,11 @@ def scatter(data, i):
     return int(data[i])
 
 
-new_static_table = ai_eval(table = static_data, model_func = do_computation,
+new_static_table = ai_eval(table = static_data, model_func = do_computation, live=False,
                     inputs = [Input("X", gather)], outputs = [Output("New", scatter, "int")])
 
-new_table = ai_eval(table = data, model_func = do_computation,
+new_table = ai_eval(table = data, model_func = do_computation, live=True,
                     inputs = [Input("X", gather)], outputs = [Output("New", scatter, "int")])
+
+
+test = new_static_table.update("idx = k")
