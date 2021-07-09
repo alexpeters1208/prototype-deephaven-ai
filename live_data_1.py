@@ -85,7 +85,6 @@ def _parse_input(inputs, table):
 
 # this will be called from AI eval and create the necessary output
 def _create_output(table=None, model_func=None, gathered=[], outputs=[]):
-    print("stepped into create_output")
     # if there are no outputs, we just want to call model_func and return nothing
     if outputs == None:
         print("COMPUTE NEW DATA")
@@ -99,9 +98,6 @@ def _create_output(table=None, model_func=None, gathered=[], outputs=[]):
         print("POPULATE OUTPUT TABLE")
         rst = table.by()
         n = table.size()
-
-        print(rst)
-        print(n)
 
         for output in outputs:
             print(f"GENERATING OUTPUT: {output.column}")
@@ -152,7 +148,6 @@ class ListenAndReturn:
     def onUpdate(self, isReplay, update):
         self.idx = IndexSetIterator(update.added, update.modified)
         self.gathered = [ input.gather(self.idx, col_set) for (input,col_set) in zip(self.inputs, self.col_sets) ]
-        print(self.gathered)
         self.newTable = _create_output(self.table, self.model_func, self.gathered, self.outputs)
 
 
