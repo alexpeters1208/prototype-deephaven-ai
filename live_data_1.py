@@ -14,7 +14,15 @@ import numpy as np
 import jpy
 
 class Input:
+    """
+    The Input class provides an interface for converting Deephaven tables to objects that Python deep learning libraries
+    are familiar with. Input objects are intended to be used as the input argument of an eval() function call.
+    """
     def __init__(self, columns, gather):
+        """
+        :param columns: the list of column names from a Deephaven table that you want to use in modelling
+        :param gather: the function that determines how data from a Deephaven table is collected
+        """
         if type(columns) is list: 
             self.columns = columns
         else:
@@ -22,15 +30,34 @@ class Input:
 
         self.gather = gather
 
+        
 class Output:
+    """
+    The Output class provides an interface for converting Python objects (such as tensors or dataframes) into Deephaven
+    tables. Output objects are intended to be used as the output argument of an eval() function call.
+    """
     def __init__(self, column, scatter, col_type="java.lang.Object"):
+        """
+        :param column: the string name of the column you would like to create to store your output
+        :param scatter: the function that determines how data from a Python object is stored in a Deephaven table
+        :param col_type: optional string that defaults to 'java.lang.Object', determines the type of output column
+        """
         self.column = column
         self.scatter = scatter
         self.col_type = col_type
 
+        
 #TODO: this should be implemented in Java for speed.  This efficiently iterates over the indices in multiple index sets.  Works for hist and real time.
 class IndexSetIterator:
+    """
+    The IndexSetIterator class provides functionality for iterating over multiple sets of given indices for static or real
+    time tables. IndexSetIterator objects are used to subset tables by indices that have been added or modified, in the
+    case of a real time table.
+    """
     def __init__(self, *indexes):
+        """
+        :param indexes: the set or multiple sets of indices that determine how to subset a Deephaven table
+        """
         self.indexes = indexes
 
     def __len__(self):
@@ -49,12 +76,25 @@ class IndexSetIterator:
                 yield it.next()
 
 
-#TODO: clearly in production code there would need to be extensive testing of inputs and outputs (e.g. no null, correct size, ...)
-#TODO: ths is a static example, real time requires more work
-#TODO: this is not written in an efficient way.  it is written quickly to get something to look at
-
-# this handles input so that user does not always have to enter every column they want to use
 def _parse_input(inputs, table):
+    """
+    Converts the list of user inputs into a new list of inputs with the following rules:
+    
+        inputs = [Input([], gather)]
+        will be transformed into a list containing a new Input object, with every column in the table as an element in
+        Input.columns. This allows users to not have to type all column names to use all features.
+        
+        inputs = [Input(["target"], gather), Input([], gather)]
+        will be transformed into a list containing two Input objects; the first will be unchanged and represent the
+        target variable, the second will be transformed to an Input object containing all column names in the dataset
+        except for the target. This allows users to not have to type all column names to use all features.
+        
+        If inputs is of length 2 or greater, we assume that the first Input object is the target variable and insist
+        that it be non-empty.
+        
+    :param inputs: the list of Input objects that gets passed to eval()
+    :param table: the Deephaven table that gets passed to eval()
+    """
     # what are all possible cases
     new_inputs = inputs
     # input length zero - problem
@@ -83,8 +123,16 @@ def _parse_input(inputs, table):
             return new_inputs
 
 
-# this will be called from AI eval and create the necessary output
 def _create_output(table=None, model_func=None, gathered=[], outputs=[]):
+    """
+    Passes gathered inputs to model_func to create output, then uses the list of Output objects to store the newly
+    created output in the given Deephaven table.
+    
+    :param table: the Deephaven used for computing and storing output
+    :param model_func: the user-defined function for performing computations on the dataset
+    :param gathered: the list of Python objects that results from applying the gather function to the Deephaven table
+    :param outputs: the list of Output objects that determine how data will be stored in the Deephaven table
+    """
     # if there are no outputs, we just want to call model_func and return nothing
     if outputs == None:
         print("COMPUTE NEW DATA")
@@ -119,8 +167,20 @@ def _create_output(table=None, model_func=None, gathered=[], outputs=[]):
         return rst.ungroup()
 
 
-# this is what the user calls to make DH data interact with standard PT/TF functions that they create
 def ai_eval(table=None, model_func=None, live=False, inputs=[], outputs=[]):
+    """
+    Takes relevant data from Deephaven table using inputs, converts that data to the desired Python type, feeds
+    it to model_func, and stores that output in a Deephaven table using outputs.
+    
+    :param table: the Deephaven table to perform computations on
+    :param model_func: the function that takes in data and performs AI computations. NOTE that model_func must have
+                       'target' and 'features' arguments in that order
+    :param live: indicates whether to treat your computation as a live computation. NOTE that this is not asking if
+                 your table is live or not, but whether model_func should be called at every table update. For instance,
+                 when performing training on a live dataset, you do not want to re-train at every table update
+    :param inputs: the list of Input objects that determine which columns get extracted from the Deephaven table
+    :param outputs: the list of Output objects that determine how to store output from model_func into the Deephaven table
+    """
     print("SETUP")
     inputs = _parse_input(inputs, table)
     col_sets = [ [ table.getColumnSource(col) for col in input.columns ] for input in inputs ]
