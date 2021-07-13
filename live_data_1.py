@@ -167,7 +167,7 @@ def _create_output(table=None, model_func=None, gathered=[], outputs=[]):
         return rst.ungroup()
 
 
-def ai_eval(table=None, model_func=None, live=False, inputs=[], outputs=[]):
+def eval(table=None, model_func=None, live=False, inputs=[], outputs=[]):
     """
     Takes relevant data from Deephaven table using inputs, converts that data to the desired Python type, feeds
     it to model_func, and stores that output in a Deephaven table using outputs.
@@ -362,7 +362,7 @@ def to_scalar(data, i):
 
 
 # supervised learning on all features, target first
-predicted = ai_eval(table = iris, model_func = train_and_validate, live=False,
+predicted = eval(table = iris, model_func = train_and_validate, live=False,
     inputs = [Input("Class", tensor_1d), Input([], tensor_2d)],
     outputs = [Output("Predicted", to_scalar, "int")])
 
@@ -424,5 +424,5 @@ def to_scalar(data, i):
     return int(data[i])
 
 
-more_predictions = ai_eval(table = live_iris, model_func = make_predictions, live=True,
+more_predictions = eval(table = live_iris, model_func = make_predictions, live=True,
     inputs = [Input([], tensor_2d)], outputs = [Output("Predicted", to_scalar, "int")])
