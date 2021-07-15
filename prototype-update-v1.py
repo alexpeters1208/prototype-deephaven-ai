@@ -46,7 +46,7 @@ class Gatherer:
 
     def gather(self, kk):
         if self.current == None or self.current.size() >= self.batch_size:
-            self.current = GatheredIndices(self.batch_size)
+            self.current = IndexSet(self.batch_size)
             
         self.current.add(kk)
         return self.current
