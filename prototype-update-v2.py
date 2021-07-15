@@ -48,8 +48,6 @@ class Future:
         self.result = None
 
     def clear():
-        self.func = None
-        self.index_set = None
         self.result = None
 
     def get():
@@ -57,6 +55,8 @@ class Future:
             self.result = self.func(self.index_set)
             self.index_set.clear()
             self.called = True
+            self.func = None
+            self.index_set = None
 
         return self.result
 
@@ -66,6 +66,9 @@ class Computer:
     def __init__(self, batch_size, func):
         self.func = func
         self.batch_size = batch_size
+        self.current = None
+
+    def clear():
         self.current = None
 
     def compute(self, kk):
@@ -120,6 +123,7 @@ def do_magic(table, model, scatter_func, batch_size):
     QueryScope.addParam("scatterer_x", scatterer_x)
 
     def cleanup(future):
+        computer.clear()
         future.clear()
         scatterer_x.clear()
 
