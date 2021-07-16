@@ -29,7 +29,7 @@ class IndexSet:
         return self.current + 1
 
     def __getitem__(self, i):
-        if i >= self.size():
+        if i >= len(self):
             raise Exception("Index out of bounds")
 
         return self.idx[i]
@@ -60,12 +60,12 @@ class Future:
         self.called = False
         self.result = None
 
-    def clear():
+    def clear(self):
         self.func = None
         self.index_set = None
         self.result = None
 
-    def get():
+    def get(self):
         if not self.called:
             self.result = self.func(self.index_set)
             self.index_set.clear()
