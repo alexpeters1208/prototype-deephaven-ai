@@ -140,7 +140,7 @@ def do_magic(table, model, scatter_func, batch_size):
         future.clear()
         scatterer_x.clear()
 
-    return table.update("IndexSet = gatherer.gather(kk)", "Future = computer.compute(IndexSet)", "X = (double) scatterer_x(Future.get())", "Clean = cleanup(Future)") \
+    return table.update("IndexSet = gatherer.gather(kk)", "Future = computer.compute(IndexSet)", "X = (double) scatterer_x.scatter(Future.get())", "Clean = cleanup(Future)") \
         .dropColumns("IndexSet", "Future", "Clean")
 
 
