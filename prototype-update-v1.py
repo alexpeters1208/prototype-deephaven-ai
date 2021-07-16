@@ -67,6 +67,11 @@ class Future:
 
     def get(self):
         if not self.called:
+            # data should be gathered here and then passed to model instead of doing it all in one go. That means were
+            # going to need to get the input objects here somehow, and I think that complicates things quite a bit.
+            
+            # self.func gets passed an index set, but I think it should get passed the gathered data.
+            # otherwise, how does the interface not change?
             self.result = self.func(self.index_set)
             self.index_set.clear()
             self.called = True
