@@ -32,7 +32,7 @@ class IndexSet:
         return self.current + 1
 
     def __getitem__(self, i):
-        if i >= self.size():
+        if i >= len(self):
             raise Exception("Index out of bounds")
 
         return self.idx[i]
@@ -47,11 +47,16 @@ class Future:
         self.called = False
         self.result = None
 
-    def clear():
+    def clear(self):
         self.result = None
 
-    def get():
+    def get(self):
         if not self.called:
+            # data should be gathered here and then passed to model instead of doing it all in one go. That means were
+            # going to need to get the input objects here somehow, and I think that complicates things quite a bit.
+            
+            # self.func gets passed an index set, but I think it should get passed the gathered data.
+            # otherwise, how does the interface not change?
             self.result = self.func(self.index_set)
             self.index_set.clear()
             self.called = True
@@ -68,7 +73,7 @@ class Computer:
         self.batch_size = batch_size
         self.current = None
 
-    def clear():
+    def clear(self):
         self.current = None
 
     def compute(self, kk):
